@@ -1,0 +1,78 @@
+# Production stack for sea.supercharged.ch
+# API: 127.0.0.1:7400   Web: 127.0.0.1:7401
+# The host's nginx terminates TLS and routes /api/ to the API and everything else to the web app.
+name: sea
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: 10m, max-file: '3'}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sea
+      POSTGRES_USER: sea
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U sea -d sea']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes', --maxmemory, 64mb]
+    volumes:
+      - queue:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 128m
+    logging: *logging
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ../deploy/Dockerfile.backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sea:${POSTGRES_PASSWORD}@postgres:5432/sea
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: production
+      DEBUG: "false"
+    ports: ['127.0.0.1:7400:8000']
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://localhost:8000/healthz")']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 384m
+    logging: *logging
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: ../deploy/Dockerfile.frontend
+    ports: ['127.0.0.1:7401:3000']
+    restart: unless-stopped
+    mem_limit: 256m
+    logging: *logging
+
+volumes:
+  database:
+  queue:

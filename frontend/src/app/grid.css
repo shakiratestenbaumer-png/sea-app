@@ -1,0 +1,49 @@
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  z-index: 10;
+}
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+}
+.react-grid-placeholder {
+  background: #0d9488 !important;
+  opacity: 0.15 !important;
+  border-radius: 12px;
+}
+
+.dashboard-grid-item {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid rgb(229 231 235 / 0.8);
+  background: white;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
+  overflow: hidden;
+}
+
+.dashboard-grid-item .grid-item-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.card-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+.card-drag-handle:active {
+  cursor: grabbing;
+}
